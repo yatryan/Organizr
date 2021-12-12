@@ -59,6 +59,14 @@ function get_page_wizard($Organizr)
                                 }
                             }
                         },
+                        dbType: {
+                            validators: {
+                                regexp: {
+                                    regexp: /^[a-zA-Z0-9_\.]+$/,
+                                    message: \'Please choose a database type\'
+                                }
+                            }
+                        },
                         dbPath: {
                             validators: {
                                 notEmpty: {
@@ -286,6 +294,17 @@ function get_page_wizard($Organizr)
                                             <p lang="en">Current Directory: <code>' . dirname(__DIR__, 2) . '</code> <a class="btn default btn-outline clipboard p-a-5" data-clipboard-text="' . dirname(__DIR__, 2) . '" href="javascript:void(0);"><i class="ti-clipboard"></i></a></p>
                                             <p lang="en">Parent Directory: <code>' . dirname(__DIR__, 3) . '</code> <a class="btn default btn-outline clipboard p-a-5" data-clipboard-text="' . dirname(__DIR__, 3) . '" href="javascript:void(0);"><i class="ti-clipboard"></i></a></p>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="license" lang="en">Database Type</label>
+                                    <div class="input-group">
+                                        <div class="input-group-addon"><i class="ti-direction"></i></div>
+                                        <select name="dbType" class="form-control wizardInput" id="form-dbType">
+                                            <option lang="en">Choose Type</option>
+                                            <option lang="en" value="mysql">SQLite</option>
+                                            <option lang="en" value="mysql">MySQL</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="form-group">

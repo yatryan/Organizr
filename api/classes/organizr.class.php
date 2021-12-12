@@ -112,7 +112,7 @@ class Organizr
 		// Set location path to default config path
 		$this->defaultConfigPath = dirname(__DIR__, 1) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'default.php';
 		// Set current time
-		$this->currentTime = gmdate("Y-m-d\TH:i:s\Z");
+		$this->currentTime = gmdate("Y-m-d H:i:s");
 		// Set variable if install is for official docker
 		$this->docker = (file_exists(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Docker.txt'));
 		// Set variable if install is for develop and set php Error levels
@@ -168,8 +168,13 @@ class Organizr
 		if ($this->hasDB()) {
 			try {
 				$connect = [
-					'driver' => 'sqlite3',
-					'database' => $this->config['dbLocation'] . $this->config['dbName']
+					// 'driver' => 'sqlite3',
+					// 'database' => $this->config['dbLocation'] . $this->config['dbName']
+					'driver'   => 'mysqli',
+					'host'     => '192.168.0.50',
+					'username' => 'organizr',
+					'password' => 'organizr',
+					'database' => 'organizr',
 				];
 				$this->db = new Connection($connect);
 			} catch (Dibi\Exception $e) {
@@ -1252,7 +1257,7 @@ class Organizr
 			array(
 				'function' => 'fetch',
 				'query' => array(
-					'SELECT * FROM users WHERE email = ? COLLATE NOCASE',
+					'SELECT * FROM users WHERE email = ?',
 					$email
 				)
 			)
@@ -1430,7 +1435,7 @@ class Organizr
 				array(
 					'function' => 'fetch',
 					'query' => array(
-						'SELECT * FROM users WHERE `id` != ? AND (username = ? COLLATE NOCASE or email = ? COLLATE NOCASE)',
+						'SELECT * FROM users WHERE `id` != ? AND (username = ? or email = ? )',
 						$id,
 						$username,
 						$email
@@ -1442,7 +1447,7 @@ class Organizr
 				array(
 					'function' => 'fetch',
 					'query' => array(
-						'SELECT * FROM users WHERE username = ? COLLATE NOCASE or email = ? COLLATE NOCASE',
+						'SELECT * FROM users WHERE username = ? or email = ?',
 						[$username],
 						[$email]
 					)
@@ -2304,6 +2309,7 @@ class Organizr
 
 	public function wizardConfig($array)
 	{
+		$dbType = $array['dbType'] ?? null;
 		$dbName = $array['dbName'] ?? null;
 		$path = $array['dbPath'] ?? null;
 		$license = $array['license'] ?? null;
@@ -2314,6 +2320,7 @@ class Organizr
 		$password = $array['password'] ?? null;
 		$email = $array['email'] ?? null;
 		$validation = array(
+			'dbType' => $dbType,
 			'dbName' => $dbName,
 			'dbPath' => $path,
 			'license' => $license,
@@ -2350,6 +2357,7 @@ class Organizr
 		$dbName = $this->dbExtension($dbName);
 		$configVersion = $this->version;
 		$configArray = array(
+			'dbType' => $dbType,
 			'dbName' => $dbName,
 			'dbLocation' => $path,
 			'license' => $license,
@@ -2387,6 +2395,8 @@ class Organizr
 	public function createDB($path, $migration = false)
 	{
 
+		$dbType = $this->config['dbType'];
+
 		if (!file_exists($path)) {
 			mkdir($path, 0777, true);
 		}
@@ -2394,107 +2404,115 @@ class Organizr
 			array(
 				'function' => 'query',
 				'query' => 'CREATE TABLE `users` (
-				`id`	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-				`username`	TEXT UNIQUE,
-				`password`	TEXT,
-				`email`	TEXT,
-				`plex_token`	TEXT,
-				`group`	TEXT,
-				`group_id`	INTEGER,
-				`locked`	INTEGER,
-				`image`	TEXT,
+				`id`	INT AUTO_INCREMENT UNIQUE,
+				`username`	VARCHAR(255) UNIQUE,
+				`password`	VARCHAR(255),
+				`email`	VARCHAR(255),
+				`plex_token`	VARCHAR(255),
+				`group`	VARCHAR(255),
+				`group_id`	INT,
+				`locked`	INT,
+				`image`	VARCHAR(255),
 				`register_date`	DATE,
-				`auth_service`	TEXT DEFAULT \'internal\'
+				`auth_service`	VARCHAR(255) DEFAULT \'internal\',
+				PRIMARY KEY (`id`)
 				);'
 			),
 			array(
 				'function' => 'query',
 				'query' => 'CREATE TABLE `chatroom` (
-					`id`	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-					`username`	TEXT,
-					`gravatar`	TEXT,
-					`uid`	TEXT,
+					`id`	INT AUTO_INCREMENT UNIQUE,
+					`username`	VARCHAR(255),
+					`gravatar`	VARCHAR(255),
+					`uid`	VARCHAR(255),
 					`date` DATE,
-					`ip` TEXT,
-					`message` TEXT
+					`ip` VARCHAR(255),
+					`message` VARCHAR(255),
+					PRIMARY KEY (`id`)
 				);'
 			),
 			array(
 				'function' => 'query',
 				'query' => 'CREATE TABLE `tokens` (
-					`id`	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-					`token`	TEXT UNIQUE,
-					`user_id`	INTEGER,
-					`browser`	TEXT,
-					`ip`	TEXT,
+					`id`	INT AUTO_INCREMENT UNIQUE,
+					`token`	VARCHAR(500) UNIQUE,
+					`user_id`	INT,
+					`browser`	VARCHAR(255),
+					`ip`	VARCHAR(255),
 					`created` DATE,
-					`expires` DATE
+					`expires` DATE,
+					PRIMARY KEY (`id`)
 				);'
 			),
 			array(
 				'function' => 'query',
 				'query' => 'CREATE TABLE `groups` (
-					`id`	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-					`group`	TEXT UNIQUE,
-					`group_id`	INTEGER,
-					`image`	TEXT,
-					`default` INTEGER
+					`id`	INT AUTO_INCREMENT UNIQUE,
+					`group`	VARCHAR(255) UNIQUE,
+					`group_id`	INT,
+					`image`	VARCHAR(255),
+					`default` INT,
+					PRIMARY KEY (`id`)
 				);'
 			),
 			array(
 				'function' => 'query',
 				'query' => 'CREATE TABLE `categories` (
-					`id`	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-					`order`	INTEGER,
-					`category`	TEXT UNIQUE,
-					`category_id`	INTEGER,
-					`image`	TEXT,
-					`default` INTEGER
+					`id`	INT AUTO_INCREMENT UNIQUE,
+					`order`	INT,
+					`category`	VARCHAR(255) UNIQUE,
+					`category_id`	INT,
+					`image`	VARCHAR(255),
+					`default` INT,
+					PRIMARY KEY (`id`)
 				);'
 			),
 			array(
 				'function' => 'query',
 				'query' => 'CREATE TABLE `tabs` (
-					`id`	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-					`order`	INTEGER,
-					`category_id`	INTEGER,
-					`name`	TEXT,
-					`url`	TEXT,
-					`url_local`	TEXT,
-					`default`	INTEGER,
-					`enabled`	INTEGER,
-					`group_id`	INTEGER,
-					`image`	TEXT,
-					`type`	INTEGER,
-					`splash`	INTEGER,
-					`ping`		INTEGER,
-					`ping_url`	TEXT,
-					`timeout`	INTEGER,
-					`timeout_ms`	INTEGER,
-					`preload`	INTEGER
+					`id`	INT AUTO_INCREMENT UNIQUE,
+					`order`	INT,
+					`category_id`	INT,
+					`name`	VARCHAR(255),
+					`url`	VARCHAR(255),
+					`url_local`	VARCHAR(255),
+					`default`	INT,
+					`enabled`	INT,
+					`group_id`	INT,
+					`image`	VARCHAR(255),
+					`type`	INT,
+					`splash`	INT,
+					`ping`		INT,
+					`ping_url`	VARCHAR(255),
+					`timeout`	INT,
+					`timeout_ms`	INT,
+					`preload`	INT,
+					PRIMARY KEY (`id`)
 				);'
 			),
 			array(
 				'function' => 'query',
 				'query' => 'CREATE TABLE `options` (
-					`id`	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-					`name`	TEXT UNIQUE,
-					`value`	TEXT
+					`id`	INT AUTO_INCREMENT UNIQUE,
+					`name`	VARCHAR(255) UNIQUE,
+					`value`	VARCHAR(1000),
+					PRIMARY KEY (`id`)
 				);'
 			),
 			array(
 				'function' => 'query',
 				'query' => 'CREATE TABLE `invites` (
-					`id`	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-					`code`	TEXT UNIQUE,
+					`id`	INT AUTO_INCREMENT UNIQUE,
+					`code`	VARCHAR(255) UNIQUE,
 					`date`	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-					`email`	TEXT,
-					`username`	TEXT,
+					`email`	VARCHAR(255),
+					`username`	VARCHAR(255),
 					`dateused`	TIMESTAMP,
-					`usedby`	TEXT,
-					`ip`	TEXT,
-					`valid`	TEXT,
-					`type` TEXT
+					`usedby`	VARCHAR(255),
+					`ip`	VARCHAR(255),
+					`valid`	VARCHAR(255),
+					`type` VARCHAR(255),
+					PRIMARY KEY (`id`)
 				);'
 			),
 		];
@@ -2659,7 +2677,7 @@ class Organizr
 			array(
 				'function' => 'fetch',
 				'query' => array(
-					'SELECT * FROM users WHERE username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE',
+					'SELECT * FROM users WHERE username = ? OR email = ?',
 					[$username],
 					[$email]
 				)
@@ -2703,7 +2721,7 @@ class Organizr
 			'created' => $this->currentTime,
 			'browser' => isset($_SERVER ['HTTP_USER_AGENT']) ? $_SERVER ['HTTP_USER_AGENT'] : null,
 			'ip' => $this->userIP(),
-			'expires' => gmdate("Y-m-d\TH:i:s\Z", time() + (86400 * $days))
+			'expires' => gmdate("Y-m-d H:i:s", time() + (86400 * $days))
 		];
 		$response = [
 			array(
